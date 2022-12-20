@@ -57,8 +57,6 @@ for row in [2000000]:
             segments.append([start, end])
 
 
-
-
     segments = np.array(sorted(segments)).astype(int).tolist()
     print(segments)
     for i in range(len(segments)-1):
@@ -77,5 +75,46 @@ for row in [2000000]:
     numRowBeacons = np.count_nonzero(beacons[:,1]==row)
     rowSum -= numRowBeacons
     print(rowSum)
+
+#bonus:
+#look for suitable boundary intersection clusters
+interestPoints = []
+maxPos = 4000000
+for i in range(len(boundaries)-1):
+    for j in range(i+1, len(boundaries)):
+        b1, b2 = boundaries[i], boundaries[j]
+        intersection = b1.exterior.intersection(b2.exterior)
+
+        if not intersection.is_empty:
+            if intersection.geom_type.startswith('Point'):  
+                interestPoints.append([intersection.x, intersection.y])
+            elif intersection.geom_type.startswith('MultiPoint'):
+                for p in intersection.geoms:
+                    interestPoints.append([p.x, p.y])
+            elif intersection.geom_type.startswith('GeometryCollection'):
+                for p in intersection.geoms:
+                    if p.geom_type.startswith('Point'):  
+                        interestPoints.append([p.x, p.y])
+            else: 
+                pass
+
+interestPoints = np.array(sorted(interestPoints))
+for p in interestPoints:
+    if p[0] > maxPos or p[1] > maxPos:
+        continue
+    dists = np.linalg.norm(interestPoints - [p], axis=1)
+    interest = sum(dists<=2)
+    if interest != 4:
+        continue
+    pointCluster = interestPoints[dists<=2]
+    unique = np.unique(pointCluster, axis=0)
+    if len(unique) < 4:
+        continue
+    print(pointCluster, 'interesting')
+    x = int(sorted(pointCluster[:,0])[2]) 
+    y = int(sorted(pointCluster[:,1])[2])
+    print(f'xy {x,y}')
+    print(f'tuning freq {x*4000000 + y}')
+    break
 
 
